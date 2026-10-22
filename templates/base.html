@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Organizador Financeiro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* VARIÁVEIS DE TEMAS */
+        :root { 
+            --green-main: #1fc365; --red-main: #ff4c4c; 
+            --bg-color: #f4f6f9; --card-bg: #ffffff; 
+            --text-dark: #1a1a1a; --border-color: #e0e0e0;
+            --text-muted: #6c757d;
+        }
+        
+        body.theme-dark {
+            --bg-color: #121212; --card-bg: #1e1e1e;
+            --text-dark: #f8f9fa; --border-color: #333333;
+            --text-muted: #a0a0a0;
+        }
+        
+        body.theme-pink {
+            --green-main: #fa669f; --red-main: #f50464;
+            --bg-color: #ffe6f2; --card-bg: #ffffff;
+            --text-dark: #860244; --border-color: #ffb3d9;
+            --text-muted: #cc0066;
+        }
+
+        body { background-color: var(--bg-color) !important; color: var(--text-dark) !important; font-family: -apple-system, sans-serif; margin: 0; padding: 0; transition: background 0.3s;}
+
+        .sidebar-desktop { display: none; }
+        .main-wrapper { width: 100%; }
+        .main-content { max-width: 500px; margin: 0 auto; padding-bottom: 90px; padding-top: 20px; }
+        
+        .bottom-nav-mobile { position: fixed; bottom: 0; width: 100%; background: var(--card-bg); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--border-color); z-index: 1000; }
+        .nav-item-mob { text-align: center; color: var(--text-muted); font-size: 11px; font-weight: 500; text-decoration: none; width: 25%; }
+        .nav-item-mob:hover, .nav-item-mob.active { color: var(--green-main); }
+        .nav-item-mob i { font-size: 22px; display: block; margin-bottom: 2px; }
+
+        @media (min-width: 992px) {
+            body { display: flex; height: 100vh; overflow: hidden; }
+            .bottom-nav-mobile { display: none; }
+            .sidebar-desktop { display: flex; flex-direction: column; width: 260px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border-color); padding: 30px 20px; flex-shrink: 0; }
+            .sidebar-brand { font-size: 20px; font-weight: 800; color: var(--text-dark); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+            .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: var(--text-dark); text-decoration: none; font-weight: 600; border-radius: 10px; margin-bottom: 8px; transition: 0.2s; }
+            .sidebar-link:hover, .sidebar-link.active { background-color: var(--bg-color); color: var(--green-main); }
+            .sidebar-link i { font-size: 20px; }
+            .main-wrapper { flex-grow: 1; overflow-y: auto; background-color: var(--bg-color); }
+            .main-content { max-width: 1000px; padding: 40px; }
+        }
+
+        .dashboard-card, .bg-white { background: var(--card-bg) !important; color: var(--text-dark); }
+        .modal-content { background-color: var(--card-bg); color: var(--text-dark); border-color: var(--border-color); }
+        .transaction-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+        .t-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; margin-right: 12px; flex-shrink: 0;}
+        .icon-red { background-color: var(--red-main); }
+        .icon-green { background-color: var(--green-main); }
+        .t-details { flex-grow: 1; }
+        .t-title { font-size: 14px; font-weight: 600; margin: 0; }
+        .t-amount { font-weight: 700; font-size: 15px; text-align: right; }
+        
+        .text-dark { color: var(--text-dark) !important; }
+        .text-muted { color: var(--text-muted) !important; }
+    </style>
+</head>
+<body class="theme-{{ usuario_global.tema if usuario_global else 'light' }}">
+
+    <div class="sidebar-desktop">
+        <div class="sidebar-brand">
+            <div style="background-color: var(--green-main); color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-wallet2"></i></div>
+            Finanças Pro
+        </div>
+        <a href="/" class="sidebar-link {% if request.endpoint == 'index' %}active{% endif %}"><i class="bi bi-house-door"></i> Home</a>
+        <a href="/transacoes" class="sidebar-link {% if request.endpoint == 'transacoes' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Transações</a>
+        <a href="/relatorios" class="sidebar-link {% if request.endpoint == 'relatorios' %}active{% endif %}"><i class="bi bi-file-bar-graph"></i> Relatórios</a>
+        <a href="/perfil" class="sidebar-link {% if request.endpoint in ['perfil', 'editar_perfil', 'configuracoes'] %}active{% endif %}"><i class="bi bi-person"></i> Perfil</a>
+    </div>
+
+    <div class="main-wrapper">
+        <div class="main-content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <div class="bottom-nav-mobile">
+        <a href="/" class="nav-item-mob {% if request.endpoint == 'index' %}active{% endif %}"><i class="bi bi-house-door-fill"></i> Home</a>
+        <a href="/transacoes" class="nav-item-mob {% if request.endpoint == 'transacoes' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Histórico</a>
+        <a href="/relatorios" class="nav-item-mob {% if request.endpoint == 'relatorios' %}active{% endif %}"><i class="bi bi-file-bar-graph"></i> Resumo</a>
+        <a href="/perfil" class="nav-item-mob {% if request.endpoint in ['perfil', 'editar_perfil', 'configuracoes'] %}active{% endif %}"><i class="bi bi-person"></i> Perfil</a>
+    </div>
+
+{% if usuario_global %}
+<!-- MODAL NOVO GANHO -->
+<div class="modal fade" id="modalGanho" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Ganho</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/adicionar" method="POST" class="anim-form">
+                <div class="modal-body">
+                    <input type="hidden" name="tipo" value="ganho">
+                    
+                    <label class="form-label text-muted small mb-1">Categoria (Digite para criar ou escolha)</label>
+                    <input type="text" name="categoria" list="lista-ganhos" class="form-control mb-3" placeholder="Ex: Salário, Freelance, Rendimentos" required>
+                    <datalist id="lista-ganhos">{% for c in cats_ganho %}<option value="{{ c }}"></option>{% endfor %}</datalist>
+
+                    <label class="form-label text-muted small mb-1">Valor (R$)</label>
+                    <input type="{% if usuario_global.input_pix %}text{% else %}number{% endif %}" step="0.01" name="valor" class="form-control mb-3 valor-input" placeholder="Ex: 1500,00" required>
+                    
+                    <label class="form-label text-muted small mb-1">Descrição (Opcional)</label>
+                    <input type="text" name="descricao" class="form-control mb-3" placeholder="Ex: Pagamento referente ao projeto X">
+
+                    <label class="form-label text-muted small mb-1">Data (Opcional - Padrão: Hoje)</label>
+                    <input type="date" name="data" class="form-control mb-3" max="{{ hoje_data }}" value="{{ hoje_data }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn text-white w-100 fw-bold" style="background-color: var(--green-main);">Salvar Ganho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVO GASTO -->
+<div class="modal fade" id="modalGasto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Gasto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/adicionar" method="POST" class="anim-form">
+                <div class="modal-body">
+                    <input type="hidden" name="tipo" value="gasto">
+                    
+                    <label class="form-label text-muted small mb-1">Categoria (Digite para criar ou escolha)</label>
+                    <input type="text" name="categoria" list="lista-gastos" class="form-control mb-3" placeholder="Ex: Alimentação, Combustível, Aluguel" required>
+                    <datalist id="lista-gastos">{% for c in cats_gasto %}<option value="{{ c }}"></option>{% endfor %}</datalist>
+
+                    <label class="form-label text-muted small mb-1">Valor (R$)</label>
+                    <input type="{% if usuario_global.input_pix %}text{% else %}number{% endif %}" step="0.01" name="valor" class="form-control mb-3 valor-input" placeholder="Ex: 250,00" required>
+                    
+                    <label class="form-label text-muted small mb-1">Descrição (Opcional)</label>
+                    <input type="text" name="descricao" class="form-control mb-3" placeholder="Ex: Compras semanais no mercado">
+
+                    <label class="form-label text-muted small mb-1">Data (Opcional - Padrão: Hoje)</label>
+                    <input type="date" name="data" class="form-control mb-3" max="{{ hoje_data }}" value="{{ hoje_data }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn text-white w-100 fw-bold" style="background-color: var(--red-main);">Salvar Gasto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- SCRIPT DO BOOTSTRAP (ESSENCIAL PARA OS MODAIS) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- SCRIPT DO BOOTSTRAP -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 1. MÁSCARA ESTILO PIX / BANCO
+    {% if usuario_global and usuario_global.input_pix %}
+    document.querySelectorAll('.valor-input').forEach(input => {
+        if (!input.value || input.value === "0") input.value = "0,00";
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, "");
+            if(value === "") value = "0";
+            value = (parseInt(value, 10) / 100).toFixed(2);
+            e.target.value = value.replace(".", ",");
+        });
+    });
+    {% endif %}
+
+    // 2. ANIMAÇÃO DE CORAÇÕES TEMA ROSA (PERSISTENTE E LONGA)
+    {% if usuario_global and usuario_global.tema == 'pink' %}
+    
+    // Função para disparar corações na tela inteira (ao salvar)
+    function dispararCoracoesGeral() {
+        for (let i = 0; i < 25; i++) {
+            criarCoracao(
+                (Math.random() * 90 + 5) + 'vw', 
+                '80vh', 
+                (Math.random() * 30 + 10) + 'vh'
+            );
+        }
+    }
+
+    // Função para disparar corações vindos da base/aba na tela nova
+    function dispararCoracoesLongosNaTelaNova() {
+        for (let i = 0; i < 15; i++) {
+            const posX = (Math.random() * 80 + 10) + 'vw';
+            const posY = '90vh';
+            const destinoY = (Math.random() * 40 + 10) + 'vh';
+            criarCoracao(posX, posY, destinoY);
+        }
+    }
+
+    // Construtor do coração com 2.5 segundos de duração real
+    function criarCoracao(posX, posY, destinoY) {
+        let h = document.createElement('div');
+        h.innerHTML = '💖';
+        h.style.position = 'fixed';
+        h.style.left = posX;
+        h.style.top = posY;
+        h.style.fontSize = (Math.random() * 16 + 14) + 'px';
+        h.style.pointerEvents = 'none';
+        h.style.zIndex = '99999';
+        
+        // Transição longa e fluida (2.5 segundos de subida)
+        h.style.transition = 'all 2.5s cubic-bezier(0.1, 0.8, 0.3, 1)';
+        h.style.opacity = '1';
+        
+        document.body.appendChild(h);
+
+        setTimeout(() => {
+            h.style.top = destinoY;
+            h.style.opacity = '0';
+            h.style.transform = `scale(${Math.random() * 1.4 + 0.8}) rotate(${(Math.random() - 0.5) * 60}deg)`;
+        }, 30);
+
+        setTimeout(() => h.remove(), 2500);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // A) Verifica se trocou de aba recentemente e precisa rodar a animação longa
+        if (sessionStorage.getItem('animar_coracoes') === 'true') {
+            sessionStorage.removeItem('animar_coracoes'); // Limpa a memória
+            dispararCoracoesLongosNaTelaNova(); // Roda a animação de 2.5s na tela recém-carregada
+        }
+
+        // B) Clique nas abas: Salva a intenção e navega INSTANTANEAMENTE
+        document.querySelectorAll('.sidebar-link, .nav-item-mob').forEach(link => {
+            link.addEventListener('click', function() {
+                sessionStorage.setItem('animar_coracoes', 'true');
+            });
+        });
+
+        // C) Salvar Formulário nos Modais
+        document.querySelectorAll('.anim-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                dispararCoracoesGeral();
+                setTimeout(() => {
+                    form.submit();
+                }, 400);
+            });
+        });
+    });
+    {% endif %}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

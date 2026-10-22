@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+    <a href="?mes={{ mes_ant }}&ano={{ ano_ant }}" class="text-secondary"><i class="bi bi-chevron-left"></i></a>
+    <span style="font-size: 18px; font-weight: 600; min-width: 130px; text-align: center;">{{ mes_nome }} {{ ano }}</span>
+    <a href="?mes={{ mes_prox }}&ano={{ ano_prox }}" class="text-secondary"><i class="bi bi-chevron-right"></i></a>
+</div>
+
+<div class="px-3 px-lg-0">
+    <div class="row g-3 mb-3">
+        <div class="col-6"><div class="p-3 text-white rounded-4" style="background: var(--green-main);"><small>Ganhos</small><h5 class="m-0 fw-bold">R$ {{ ganhos }}</h5></div></div>
+        <div class="col-6"><div class="p-3 text-white rounded-4" style="background: var(--red-main);"><small>Gastos</small><h5 class="m-0 fw-bold">R$ {{ gastos }}</h5></div></div>
+    </div>
+    
+    <div class="row g-3 mb-4">
+        <div class="col-6"><button class="btn btn-success w-100 py-3 rounded-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalGanho"><i class="bi bi-plus fs-3 d-block"></i> ADICIONAR</button></div>
+        <div class="col-6"><button class="btn btn-danger w-100 py-3 rounded-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalGasto"><i class="bi bi-dash fs-3 d-block"></i> ADICIONAR</button></div>
+    </div>
+</div>
+
+<div class="bg-white p-3 rounded-top-5 shadow-sm" style="min-height: 350px;">
+    <h6 class="fw-bold mb-3 ms-2">Recentes</h6>
+    {% if transacoes %}
+        {% for t in transacoes %}
+        <div class="transaction-item">
+            <div class="t-icon {% if t.tipo == 'gasto' %}icon-red{% else %}icon-green{% endif %}"><i class="bi {{ t.icone }}"></i></div>
+            <div class="t-details">
+                <p class="t-title">{{ t.categoria }}</p>
+                {% if t.descricao %}<small class="text-muted d-block" style="font-size: 11px;">{{ t.descricao }}</small>{% endif %}
+            </div>
+            <div class="t-amount">R$ {{ t.formatar_valor() }}</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center text-muted py-5"><p>Nenhuma transação recente.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

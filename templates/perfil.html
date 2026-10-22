@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="px-3 px-lg-0 mt-4 text-center">
+    <div style="width: 80px; height: 80px; background-color: var(--green-main); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white; margin: 0 auto 15px;">
+        <i class="bi bi-person-fill"></i>
+    </div>
+    <h3 class="fw-bold">{{ usuario_global.nome }}</h3>
+    <p class="text-muted small">{{ usuario_global.email }}</p>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="alert alert-{{ messages[0][0] }} py-2">{{ messages[0][1] }}</div>{% endif %}
+    {% endwith %}
+
+    <div class="dashboard-card mt-4 text-start p-0 overflow-hidden">
+        <a href="/perfil/editar" class="d-flex align-items-center justify-content-between p-3 text-decoration-none" style="color: var(--text-dark); border-bottom: 1px solid var(--border-color);">
+            <span><i class="bi bi-pencil me-2"></i> Editar Perfil (Senha/Nome)</span> <i class="bi bi-chevron-right"></i>
+        </a>
+        <a href="/configuracoes" class="d-flex align-items-center justify-content-between p-3 text-decoration-none" style="color: var(--text-dark); border-bottom: 1px solid var(--border-color);">
+            <span><i class="bi bi-gear me-2"></i> Configurações e Temas</span> <i class="bi bi-chevron-right"></i>
+        </a>
+        <a href="/logout" class="d-flex align-items-center justify-content-between p-3 text-decoration-none text-danger">
+            <span><i class="bi bi-box-arrow-right me-2"></i> Sair da Conta</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

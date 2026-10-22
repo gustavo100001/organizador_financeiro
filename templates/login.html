@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Organizador Financeiro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>body { background-color: #f4f6f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }</style>
+</head>
+<body>
+<div class="bg-white p-4 rounded-4 shadow-sm" style="width: 100%; max-width: 400px;">
+    <div class="text-center mb-4">
+        <i class="bi bi-person-circle text-primary fs-1"></i>
+        <h4 class="fw-bold mt-2">Bem-vindo de volta</h4>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="alert alert-{{ messages[0][0] }} py-2">{{ messages[0][1] }}</div>{% endif %}
+    {% endwith %}
+
+    <form action="/login" method="POST">
+        <div class="mb-3">
+            <label class="form-label small text-muted">E-mail</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-4">
+            <label class="form-label small text-muted">Senha</label>
+            <input type="password" name="senha" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 fw-bold">Entrar</button>
+    </form>
+    
+    <!-- ÁREA DOS LINKS ATUALIZADA AQUI -->
+    <div class="text-center mt-4">
+        <a href="/recuperar_senha" class="text-decoration-none small text-muted d-block mb-2"><i class="bi bi-key me-1"></i> Esqueceu a senha?</a>
+        <a href="/cadastro" class="text-decoration-none small fw-bold">Não tem conta? Cadastre-se</a>
+    </div>
+    
+</div>
+</body>
+</html>

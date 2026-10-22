@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Senha</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>body { background-color: #f4f6f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }</style>
+</head>
+<body>
+<div class="bg-white p-4 rounded-4 shadow-sm" style="width: 100%; max-width: 400px;">
+    <h4 class="fw-bold text-center mb-2">Esqueceu a senha?</h4>
+    <p class="text-muted small text-center mb-4">Como estamos em ambiente local de testes, basta confirmar seu e-mail e digitar a nova senha.</p>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="alert alert-{{ messages[0][0] }} py-2">{{ messages[0][1] }}</div>{% endif %}
+    {% endwith %}
+
+    <form action="/recuperar_senha" method="POST">
+        <label class="form-label small text-muted">E-mail da conta</label>
+        <input type="email" name="email" class="form-control mb-3" required>
+        <label class="form-label small text-muted">Nova Senha</label>
+        <input type="password" name="nova_senha" class="form-control mb-4" required>
+        <button type="submit" class="btn btn-warning w-100 fw-bold">Redefinir Senha</button>
+    </form>
+    <div class="text-center mt-3"><a href="/login" class="text-decoration-none small">Voltar para Login</a></div>
+</div>
+</body>
+</html>

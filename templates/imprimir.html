@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Financeiro - {{ mes_nome }} {{ ano }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 20px; font-size: 16px; line-height: 1.5; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 25px; }
+        .header h2 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .header p { margin: 5px 0 0; color: #555; font-size: 16px; }
+        .resumo-grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .resumo-box { border: 1px solid #ccc; padding: 20px; width: 30%; text-align: center; border-radius: 5px; font-size: 16px; }
+        .resumo-box.saldo { background-color: #f0f0f0; font-weight: bold; font-size: 18px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 12px; text-align: left; font-size: 15px; }
+        th { background-color: #f9f9f9; font-weight: bold; }
+        .text-right { text-align: right; }
+        .ganho { color: #008f39; font-weight: 600; }
+        .gasto { color: #a00000; font-weight: 600; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 25px;">
+        <button onclick="window.print()" style="padding: 12px 24px; cursor: pointer; font-size: 16px; font-weight: bold;">🖨️ Imprimir / Guardar PDF</button>
+        <button onclick="window.close()" style="padding: 12px 24px; cursor: pointer; font-size: 16px;">Fechar</button>
+    </div>
+
+    <div class="header">
+        <h2>Relatório Financeiro</h2>
+        <p>{{ usuario_global.nome }} | {{ mes_nome }} de {{ ano }}</p>
+    </div>
+
+    <div class="resumo-grid">
+        <div class="resumo-box"><span>Total Receitas</span><br><br><strong class="ganho">R$ {{ receitas }}</strong></div>
+        <div class="resumo-box"><span>Total Despesas</span><br><br><strong class="gasto">R$ {{ despesas }}</strong></div>
+        <div class="resumo-box saldo"><span>Saldo do Mês</span><br><br><strong>R$ {{ saldo }}</strong></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Tipo</th><th class="text-right">Valor (R$)</th></tr>
+        </thead>
+        <tbody>
+            {% for t in transacoes %}
+            <tr>
+                <td>{{ t.data[-2:] }}/{{ t.data[5:7] }}/{{ t.data[:4] }}</td>
+                <td>{{ t.categoria }}</td>
+                <td>{{ t.descricao or '-' }}</td>
+                <td>{{ t.tipo|capitalize }}</td>
+                <td class="text-right {% if t.tipo == 'ganho' %}ganho{% else %}gasto{% endif %}">{{ t.formatar_valor() }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" style="text-align: center; padding: 30px; font-size: 16px;">Nenhuma transação registada neste mês.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>
