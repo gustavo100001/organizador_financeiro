@@ -1,1 +1,0 @@
-# organizador_financeiro
