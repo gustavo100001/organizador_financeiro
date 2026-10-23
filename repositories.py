@@ -6,23 +6,34 @@ class UsuarioRepository:
 
     def salvar(self, usuario: Usuario):
         with self.db.get_connection() as conn:
-            conn.execute("INSERT INTO usuario (nome, email, senha_hash) VALUES (?, ?, ?)", 
-                         (usuario.nome, usuario.email, usuario.senha_hash))
+            conn.execute("INSERT INTO usuario (nome, email, telefone, senha_hash) VALUES (?, ?, ?, ?)", 
+                         (usuario.nome, usuario.email, usuario.telefone, usuario.senha_hash))
             conn.commit()
 
     def buscar_por_email(self, email):
         with self.db.get_connection() as conn:
             row = conn.execute("SELECT * FROM usuario WHERE email = ?", (email,)).fetchone()
-            if row: return Usuario(**row)
+            if row: 
+                d = dict(row)
+                return Usuario(id=d['id'], nome=d['nome'], email=d['email'], telefone=d.get('telefone', ''), senha_hash=d['senha_hash'], 
+                               tema=d.get('tema', 'light'), input_pix=d.get('input_pix', 0), 
+                               tentativas_login=d.get('tentativas_login', 0), bloqueado_ate=d.get('bloqueado_ate'), 
+                               codigo_recuperacao=d.get('codigo_recuperacao'), data_cadastro=d.get('data_cadastro'),
+                               data_exclusao=d.get('data_exclusao')) # Adicionado
             return None
 
     def buscar_por_id(self, id_usuario):
         with self.db.get_connection() as conn:
             row = conn.execute("SELECT * FROM usuario WHERE id = ?", (id_usuario,)).fetchone()
-            if row: return Usuario(**row)
+            if row: 
+                d = dict(row)
+                return Usuario(id=d['id'], nome=d['nome'], email=d['email'], telefone=d.get('telefone', ''), senha_hash=d['senha_hash'], 
+                               tema=d.get('tema', 'light'), input_pix=d.get('input_pix', 0), 
+                               tentativas_login=d.get('tentativas_login', 0), bloqueado_ate=d.get('bloqueado_ate'), 
+                               codigo_recuperacao=d.get('codigo_recuperacao'), data_cadastro=d.get('data_cadastro'),
+                               data_exclusao=d.get('data_exclusao')) # Adicionado
             return None
-
-    # --- NOVAS FUNÇÕES DE SEGURANÇA E PERFIL ---
+        
     def registrar_falha_login(self, email, tentativas, bloqueado_ate=None):
         with self.db.get_connection() as conn:
             conn.execute("UPDATE usuario SET tentativas_login = ?, bloqueado_ate = ? WHERE email = ?", (tentativas, bloqueado_ate, email))
@@ -50,6 +61,29 @@ class UsuarioRepository:
         with self.db.get_connection() as conn:
             conn.execute("UPDATE usuario SET tema = ?, input_pix = ? WHERE id = ?", (tema, input_pix, id_usuario))
             conn.commit()
+
+    # --- NOVAS FUNÇÕES PARA O CÓDIGO DE RECUPERAÇÃO ---
+    def salvar_codigo_recuperacao(self, email, codigo):
+        with self.db.get_connection() as conn:
+            conn.execute("UPDATE usuario SET codigo_recuperacao = ? WHERE email = ?", (codigo, email))
+            conn.commit()
+
+    def validar_codigo(self, email, codigo):
+        with self.db.get_connection() as conn:
+            row = conn.execute("SELECT codigo_recuperacao FROM usuario WHERE email = ?", (email,)).fetchone()
+            if row and row['codigo_recuperacao'] == codigo:
+                return True
+            return False
+
+    def solicitar_exclusao(self, id_usuario, data_exclusao):
+        with self.db.get_connection() as conn:
+            conn.execute("UPDATE usuario SET data_exclusao = ? WHERE id = ?", (data_exclusao, id_usuario))
+            conn.commit()
+
+    def cancelar_exclusao(self, id_usuario):
+            with self.db.get_connection() as conn:
+                conn.execute("UPDATE usuario SET data_exclusao = NULL WHERE id = ?", (id_usuario,))
+                conn.commit()
 
 class TransacaoRepository:
     def __init__(self, db_manager):
@@ -112,3 +146,5 @@ class TransacaoRepository:
         with self.db.get_connection() as conn:
             rows = conn.execute("SELECT DISTINCT categoria FROM transacoes WHERE usuario_id = ? AND tipo = ? ORDER BY categoria", (usuario_id, tipo)).fetchall()
             return [r['categoria'] for r in rows]
+
+   

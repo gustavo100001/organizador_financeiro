@@ -12,20 +12,18 @@ class DatabaseManager:
     def init_db(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            # Tabela de Usuários atualizada com Temas, Pix e Segurança
+            
+            # 1. Criação das tabelas base (se ainda não existirem)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS usuario (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     nome TEXT NOT NULL,
                     email TEXT UNIQUE NOT NULL,
                     senha_hash TEXT NOT NULL,
-                    tema TEXT DEFAULT 'light',
-                    input_pix BOOLEAN DEFAULT 0,
-                    tentativas_login INTEGER DEFAULT 0,
-                    bloqueado_ate TEXT,
                     data_cadastro DATE DEFAULT CURRENT_DATE
                 )
             ''')
+            
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS transacoes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,4 +37,34 @@ class DatabaseManager:
                     FOREIGN KEY (usuario_id) REFERENCES usuario (id)
                 )
             ''')
+            
+            # 2. MOTOR DE MIGRAÇÃO INTELIGENTE (Não apaga dados, apenas adiciona colunas novas)
+            # Ele lê a estrutura atual da tabela "usuario"
+            cursor.execute("PRAGMA table_info(usuario)")
+            colunas_usuario = [col['name'] for col in cursor.fetchall()]
+
+            # Verifica e adiciona cada coluna caso ela não exista
+            if 'telefone' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN telefone TEXT DEFAULT ''")
+                
+            if 'tema' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN tema TEXT DEFAULT 'light'")
+                
+            if 'input_pix' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN input_pix BOOLEAN DEFAULT 0")
+                
+            if 'tentativas_login' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN tentativas_login INTEGER DEFAULT 0")
+                
+            if 'bloqueado_ate' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN bloqueado_ate TEXT")
+                
+            if 'codigo_recuperacao' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN codigo_recuperacao TEXT")
+
+            if 'data_exclusao' not in colunas_usuario:
+                cursor.execute("ALTER TABLE usuario ADD COLUMN data_exclusao TEXT")
+
+            conn.commit()
+
             conn.commit()

@@ -15,22 +15,26 @@
         <h4 class="fw-bold mt-2">Criar Conta</h4>
     </div>
     
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}<div class="alert alert-danger py-2">{{ messages[0] }}</div>{% endif %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="alert alert-{{ messages[0][0] }} py-2" style="font-size: 14px;">{{ messages[0][1] }}</div>{% endif %}
     {% endwith %}
 
     <form action="/cadastro" method="POST">
         <div class="mb-3">
-            <label class="form-label small text-muted">Nome</label>
+            <label class="form-label small text-muted">Nome </label>
             <input type="text" name="nome" class="form-control" required>
         </div>
         <div class="mb-3">
             <label class="form-label small text-muted">E-mail</label>
             <input type="email" name="email" class="form-control" required>
         </div>
+        <div class="mb-3">
+            <label class="form-label small text-muted">Telefone (Celular com DDD)</label>
+            <input type="text" name="telefone" class="form-control" placeholder="(00) 00000-0000" required>
+        </div>
         <div class="mb-4">
-            <label class="form-label small text-muted">Senha</label>
-            <input type="password" name="senha" class="form-control" required>
+            <label class="form-label small text-muted">Crie uma Senha (Mínimo 6 caracteres)</label>
+            <input type="password" name="senha" class="form-control" minlength="6" placeholder="Sua senha" title="A senha deve ter no mínimo 6 caracteres" required>
         </div>
         <button type="submit" class="btn btn-success w-100 fw-bold">Criar Minha Conta</button>
     </form>

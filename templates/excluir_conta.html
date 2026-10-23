@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="px-3 mt-4">
+    <h4 class="fw-bold mb-4 text-danger"><a href="/perfil" class="text-decoration-none text-dark"><i class="bi bi-arrow-left me-2"></i></a> Excluir Conta</h4>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="alert alert-{{ messages[0][0] }} py-2">{{ messages[0][1] }}</div>{% endif %}
+    {% endwith %}
+
+    <div class="dashboard-card p-4 border border-danger">
+        
+        {% if passo == '1' %}
+            <!-- ETAPA 1: AVISO E CONFIRMAÇÃO -->
+            <div class="text-center mb-4">
+                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 50px;"></i>
+                <h5 class="fw-bold mt-3">Tem certeza absoluta?</h5>
+            </div>
+            
+            <p class="text-muted small">Ao solicitar a exclusão da sua conta, aplicam-se as seguintes regras de segurança:</p>
+            <ul class="text-muted small mb-4 text-start">
+                <li>O seu acesso atual será encerrado imediatamente.</li>
+                <li>Os seus ganhos, gastos e relatórios serão mantidos numa quarentena de segurança.</li>
+                <li><strong>Arrependimento:</strong> Se mudar de ideias antes do prazo, basta fazer login com a sua senha. O sistema perguntará se deseja cancelar a exclusão.</li>
+                <li><strong>Após 30 dias exatos</strong>, o seu perfil será <strong>apagado permanentemente</strong>.</li>
+            </ul>
+
+            <div class="d-flex gap-2">
+                <a href="/perfil" class="btn btn-secondary w-50 fw-bold">Cancelar</a>
+                <a href="/perfil/excluir?passo=2" class="btn btn-danger w-50 fw-bold">Entendi, Continuar</a>
+            </div>
+
+        {% elif passo == '2' %}
+            <!-- ETAPA 2: EXIGÊNCIA DE SENHA -->
+            <div class="text-center mb-4">
+                <i class="bi bi-shield-lock-fill text-danger" style="font-size: 50px;"></i>
+                <h5 class="fw-bold mt-3">Confirmação de Segurança</h5>
+            </div>
+
+            <p class="text-muted small mb-4 text-center">Para garantir que é mesmo você quem está a realizar esta ação, por favor, insira a sua senha de acesso.</p>
+
+            <form action="/perfil/excluir?passo=2" method="POST">
+                <label class="form-label small fw-bold text-danger">Senha de Acesso</label>
+                <input type="password" name="senha" class="form-control mb-4" placeholder="Digite sua senha" required>
+                
+                <div class="d-flex gap-2">
+                    <a href="/perfil" class="btn btn-secondary w-50 fw-bold">Cancelar</a>
+                    <button type="submit" class="btn btn-danger w-50 fw-bold">Excluir Conta</button>
+                </div>
+            </form>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

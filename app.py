@@ -6,6 +6,7 @@ from decimal import Decimal
 from database import DatabaseManager
 from models import Usuario, Transacao
 from repositories import UsuarioRepository, TransacaoRepository
+import random
 
 app = Flask(__name__)
 # OBRIGATÓRIO: Chave secreta para criptografar os cookies de sessão dos usuários
@@ -50,14 +51,20 @@ def cadastro():
     if request.method == 'POST':
         nome = request.form.get('nome')
         email = request.form.get('email').strip().lower()
+        telefone = request.form.get('telefone').strip()
         senha = request.form.get('senha')
         
+        # VALIDAÇÃO DA SENHA: Mínimo de 6 caracteres (letras, números ou símbolos)
+        if not senha or len(senha) < 6:
+            flash('A senha deve conter no mínimo 6 caracteres.', 'danger')
+            return redirect(url_for('cadastro'))
+
         if usuario_repo.buscar_por_email(email):
             flash('Este e-mail já está registado.', 'danger')
             return redirect(url_for('cadastro'))
 
         senha_criptografada = generate_password_hash(senha)
-        usuario_repo.salvar(Usuario(nome=nome, email=email, senha_hash=senha_criptografada))
+        usuario_repo.salvar(Usuario(nome=nome, email=email, telefone=telefone, senha_hash=senha_criptografada))
         flash('Conta criada com sucesso! Faça login.', 'success')
         return redirect(url_for('login'))
         
@@ -72,7 +79,6 @@ def login():
         
         if user:
             agora = datetime.now()
-            # Verifica se está bloqueado por tentativas falhas
             if user.bloqueado_ate:
                 bloqueio = datetime.strptime(user.bloqueado_ate, "%Y-%m-%d %H:%M:%S")
                 if agora < bloqueio:
@@ -80,14 +86,25 @@ def login():
                     flash(f'Segurança: Conta bloqueada. Tente novamente em {restante} minuto(s).', 'danger')
                     return render_template('login.html')
 
-            # Verifica a senha
             if check_password_hash(user.senha_hash, senha):
+                # VERIFICA SE A CONTA ESTÁ AGENDADA PARA EXCLUSÃO
+                if user.data_exclusao:
+                    data_limite = datetime.strptime(user.data_exclusao, "%Y-%m-%d %H:%M:%S")
+                    if agora <= data_limite:
+                        # Cria uma sessão temporária e envia para a tela de decisão
+                        session['recuperacao_usuario_id'] = user.id
+                        return redirect(url_for('recuperar_conta'))
+                    else:
+                        flash('Esta conta foi permanentemente excluída e já não pode ser acedida.', 'danger')
+                        return render_template('login.html')
+
+                # Login normal se não houver exclusão agendada
                 usuario_repo.limpar_falhas_login(email)
                 session['usuario_id'] = user.id
                 return redirect(url_for('index'))
             else:
                 falhas = user.tentativas_login + 1
-                if falhas >= 5: # Bloqueia por 5 minutos na 5ª tentativa falhada
+                if falhas >= 5:
                     bloqueio_ate = (agora + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
                     usuario_repo.registrar_falha_login(email, falhas, bloqueio_ate)
                     flash('Segurança: Conta bloqueada por 5 minutos devido a múltiplas falhas.', 'danger')
@@ -99,6 +116,37 @@ def login():
             
     return render_template('login.html')
 
+@app.route('/recuperar_conta', methods=['GET', 'POST'])
+def recuperar_conta():
+    # Verifica se o utilizador passou pelo login com sucesso
+    uid_recuperacao = session.get('recuperacao_usuario_id')
+    if not uid_recuperacao:
+        return redirect(url_for('login'))
+        
+    user = usuario_repo.buscar_por_id(uid_recuperacao)
+    
+    if request.method == 'POST':
+        acao = request.form.get('acao')
+        
+        if acao == 'restaurar':
+            # Cancela a exclusão, limpa a sessão temporária e faz o login real
+            usuario_repo.cancelar_exclusao(uid_recuperacao)
+            usuario_repo.limpar_falhas_login(user.email)
+            session.pop('recuperacao_usuario_id', None)
+            session['usuario_id'] = uid_recuperacao
+            flash('Bem-vindo de volta! A exclusão foi cancelada e a sua conta está totalmente ativa.', 'success')
+            return redirect(url_for('index'))
+            
+        elif acao == 'manter_exclusao':
+            # Limpa a sessão temporária e volta para o login
+            session.pop('recuperacao_usuario_id', None)
+            flash('A sua conta continua agendada para exclusão.', 'info')
+            return redirect(url_for('login'))
+
+    # Para exibir a data limite formatada no HTML
+    data_formatada = datetime.strptime(user.data_exclusao, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y")
+    return render_template('recuperar_conta.html', data_limite=data_formatada)
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -107,16 +155,43 @@ def logout():
 @app.route('/recuperar_senha', methods=['GET', 'POST'])
 def recuperar_senha():
     if request.method == 'POST':
-        email = request.form.get('email').strip().lower()
-        nova_senha = request.form.get('nova_senha')
-        if usuario_repo.buscar_por_email(email):
-            usuario_repo.atualizar_senha(email, generate_password_hash(nova_senha))
-            usuario_repo.limpar_falhas_login(email)
-            flash('Senha redefinida com sucesso! Pode fazer login.', 'success')
-            return redirect(url_for('login'))
-        flash('E-mail não encontrado.', 'danger')
-    return render_template('recuperar_senha.html')
+        passo = request.form.get('passo')
+        
+        # PASSO 1: O utilizador informa o e-mail para receber o código
+        if passo == '1':
+            email = request.form.get('email').strip().lower()
+            user = usuario_repo.buscar_por_email(email)
+            if user:
+                # Gera um código aleatório de 6 dígitos
+                codigo = str(random.randint(100000, 999999))
+                usuario_repo.salvar_codigo_recuperacao(email, codigo)
+                
+                # Simulação de envio por SMS/E-mail (Exibe no terminal e na tela)
+                print(f"\n[SISTEMA SMS/EMAIL] O código para {user.nome} ({user.telefone}) é: {codigo}\n")
+                flash(f'Simulação de Envio: Um SMS foi enviado para {user.telefone} com o código: {codigo}', 'info')
+                
+                return render_template('recuperar_senha.html', passo=2, email=email)
+            else:
+                flash('E-mail não encontrado no sistema.', 'danger')
+                return redirect(url_for('recuperar_senha'))
+                
+        # PASSO 2: O utilizador insere o código e a nova senha
+        elif passo == '2':
+            email = request.form.get('email')
+            codigo_digitado = request.form.get('codigo')
+            nova_senha = request.form.get('nova_senha')
+            
+            if usuario_repo.validar_codigo(email, codigo_digitado):
+                usuario_repo.atualizar_senha(email, generate_password_hash(nova_senha))
+                usuario_repo.salvar_codigo_recuperacao(email, None) # Invalida o código após uso
+                usuario_repo.limpar_falhas_login(email)
+                flash('Senha redefinida com sucesso! Pode fazer login.', 'success')
+                return redirect(url_for('login'))
+            else:
+                flash('Código de verificação incorreto.', 'danger')
+                return render_template('recuperar_senha.html', passo=2, email=email)
 
+    return render_template('recuperar_senha.html', passo=1)
 
 # ==========================================
 # 2. ROTAS DO PERFIL E CONFIGURAÇÕES
@@ -148,6 +223,32 @@ def editar_perfil():
         return redirect(url_for('perfil'))
         
     return render_template('editar_perfil.html', user=user)
+
+@app.route('/perfil/excluir', methods=['GET', 'POST'])
+@login_required
+def excluir_conta():
+    uid = session['usuario_id']
+    user = usuario_repo.buscar_por_id(uid)
+    passo = request.args.get('passo', '1')
+
+    if request.method == 'POST':
+        senha = request.form.get('senha')
+        
+        # Verifica se a senha está correta
+        if not check_password_hash(user.senha_hash, senha):
+            flash('Senha incorreta. A exclusão foi cancelada por segurança.', 'danger')
+            return redirect(url_for('excluir_conta', passo='2'))
+        
+        # Agenda a exclusão para 30 dias a partir de hoje
+        data_exclusao = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        usuario_repo.solicitar_exclusao(uid, data_exclusao)
+        
+        # Desloga o utilizador
+        session.clear()
+        flash('Sua conta foi agendada para exclusão e será apagada permanentemente em 30 dias.', 'info')
+        return redirect(url_for('login'))
+        
+    return render_template('excluir_conta.html', passo=passo)
 
 @app.route('/configuracoes', methods=['GET', 'POST'])
 @login_required
